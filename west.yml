@@ -1,0 +1,11 @@
+manifest:
+  projects:
+    - name: personality_zephyr
+      url: https://github.com/CS26-16/personality-zephyr.git
+      revision: main
+      import:
+        path-prefix: deps
+        name-whitelist:
+          - hal_ambiq
+  self:
+    path: .
