@@ -1,0 +1,14 @@
+# Zephyr / west artifacts
+build*/
+deps/
+.deps/
+**/.west/
+zephyr/
+
+# CMake/Ninja
+CMakeCache.txt
+CMakeFiles/
+cmake-build-*/
+
+# macOS
+.DS_Store
