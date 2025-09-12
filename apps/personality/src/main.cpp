@@ -1,3 +1,5 @@
+// main.cpp
+
 extern "C" {
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
