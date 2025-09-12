@@ -1,3 +1,5 @@
+# .gitignore
+
 # Zephyr / west artifacts
 build*/
 deps/
