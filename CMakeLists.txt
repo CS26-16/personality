@@ -22,9 +22,9 @@ add_compile_options(
 
 # Your sources (C++ main + modules)
 target_sources(app PRIVATE
-		src/main.cpp
-		src/sched.cpp
-		src/cli_shell.cpp
+		apps/personality/src/main.cpp
+		apps/personality/src/sched.cpp
+		apps/personality/src/cli_shell.cpp
 		# add more .cpp files as created
 )
 
