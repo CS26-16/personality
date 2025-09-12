@@ -1,3 +1,2 @@
-//
-// Created by Steve Deibert on 9/10/25.
+// cli_shell.cpp
 // optional: wire Zephyr shell commands later (still fine as C++)
