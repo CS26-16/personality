@@ -1,13 +1,12 @@
 # west.yml
 
 manifest:
+  version: 0.13
+
   projects:
-    - name: personality_zephyr
-      url: https://github.com/CS26-16/personality-zephyr.git
+    - name: zephyr
+      url: https://github.com/zephyrproject-rtos/zephyr
       revision: main
-      import:
-        path-prefix: deps
-        name-whitelist:
-          - hal_ambiq
+      import: true
   self:
-    path: .
+    path: personality-zephyr
