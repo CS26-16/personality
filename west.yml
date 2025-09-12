@@ -1,3 +1,5 @@
+# west.yml
+
 manifest:
   projects:
     - name: personality_zephyr
