@@ -1,6 +1,4 @@
-//
-// Created by Steve Deibert on 9/10/25.
-//
+// sched.cpp
 
 extern "C" {
 #include <zephyr/kernel.h>
