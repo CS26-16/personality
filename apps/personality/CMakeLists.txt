@@ -23,6 +23,6 @@ target_sources(app PRIVATE
 		src/main.cpp
 		src/sched.cpp
 		src/cli_shell.cpp
-		# add more .cpp files as created them
+		# add more .cpp files as created
 )
 
