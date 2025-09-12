@@ -12,4 +12,6 @@ cmake-build-*/
 
 # macOS
 .DS_Store
+
+#JetBrains IDEs
 /.idea
