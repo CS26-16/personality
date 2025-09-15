@@ -1,0 +1,1 @@
+After cloning, open the terminal in the repository location and run ```git submodule update --init --recursive```
