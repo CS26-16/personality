@@ -22,43 +22,29 @@ add_compile_options(
 )
 
 # ---- AmbiqSuite SDK root ----
-set(AMBIQSUITE_DIR ${CMAKE_SOURCE_DIR}/third_party/AmbiqSuiteSDK)
+set(AMBIQSUITE_DIR ${CMAKE_SOURCE_DIR}/third-party/AmbiqSuiteSDK)
 
 # Includes
 include_directories(
 		${AMBIQSUITE_DIR}
 		${AMBIQSUITE_DIR}/CMSIS/ARM/Include
 		${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Include
+		${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Source
 		${AMBIQSUITE_DIR}/mcu/apollo3
 		${AMBIQSUITE_DIR}/mcu/apollo3/hal
 		${AMBIQSUITE_DIR}/utils
 		${AMBIQSUITE_DIR}/boards/apollo3_evb
 )
 
-# ---- Pick a linker script from the SDK (first match wins) ----
-file(GLOB_RECURSE LD_CANDIDATES
-		"${AMBIQSUITE_DIR}/boards/apollo3_evb/**.ld"
-		"${AMBIQSUITE_DIR}/mcu/apollo3/gcc/**.ld"
-)
-list(LENGTH LD_CANDIDATES _ldn)
-if(_ldn EQUAL 0)
-	message(FATAL_ERROR "No Apollo3 EVB .ld found in AmbiqSuiteSDK. Point LINKER_SCRIPT to the right file.")
-endif()
-list(GET LD_CANDIDATES 0 LINKER_SCRIPT)
+# ---- Linker script ----
+set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/toolchain/apollo3_evb_sbl.ld)
+
 message(STATUS "Using linker script: ${LINKER_SCRIPT}")
 
 # ---- Startup/system sources (names vary across SDKs; adjust if needed) ----
 set(STARTUP_SOURCES
-		${AMBIQSUITE_DIR}/mcu/apollo3/hal/am_hal_sysctrl.c
-		${AMBIQSUITE_DIR}/mcu/apollo3/hal/am_hal_interrupt.c
-		${AMBIQSUITE_DIR}/mcu/apollo3/hal/am_hal_cachectrl.c
-		${AMBIQSUITE_DIR}/mcu/apollo3/hal/am_hal_clkgen.c
-		${AMBIQSUITE_DIR}/mcu/apollo3/hal/am_hal_flash.c
-		${AMBIQSUITE_DIR}/mcu/apollo3/hal/am_hal_gpio.c
-		${AMBIQSUITE_DIR}/mcu/apollo3/hal/am_hal_uart.c
-		${AMBIQSUITE_DIR}/mcu/apollo3/device/system_apollo3.c
-		# If this file doesn't exist in your SDK, search for "startup_" under AmbiqSuiteSDK and replace:
-		${AMBIQSUITE_DIR}/mcu/apollo3/startup_gcc.c
+		${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Source/system_apollo3.c
+		${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Source/startup_apollo3.s
 )
 
 # ---- App ----
@@ -68,10 +54,20 @@ add_executable(personality.elf
 )
 
 # ---- Link ----
+# Link the prebuilt SDK libs (HAL + BSP)
+target_link_libraries(personality.elf PRIVATE
+		${AMBIQSUITE_DIR}/mcu/apollo3/gcc/bin/libam_hal.a
+		${AMBIQSUITE_DIR}/boards/apollo3_evb/gcc/bin/libam_bsp.a
+		
+		# Standard libs (grouping helps circular refs)
+		-Wl,--start-group
+		m c gcc nosys
+		-Wl,--end-group
+)
+
 target_link_options(personality.elf PRIVATE
 		-T${LINKER_SCRIPT}
-		-Wl,--gc-sections
-		-Wl,-Map=${CMAKE_BINARY_DIR}/personality.map
+		-Wl,--gc-sections -Wl,-Map=${CMAKE_BINARY_DIR}/personality.map
 )
 
 # ---- Binary artifact ----
