@@ -29,7 +29,6 @@ include_directories(
 		${AMBIQSUITE_DIR}
 		${AMBIQSUITE_DIR}/CMSIS/ARM/Include
 		${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Include
-		${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Source
 		${AMBIQSUITE_DIR}/mcu/apollo3
 		${AMBIQSUITE_DIR}/mcu/apollo3/hal
 		${AMBIQSUITE_DIR}/utils
