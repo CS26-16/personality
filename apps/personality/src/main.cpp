@@ -7,7 +7,7 @@ extern "C" {
 }
 
 static void board_init() {
-	am_hal_clkgen_control(AM_HAL_CLKGEN_CONTROL_SYSCLK_MAX, 0);
+	am_hal_clkgen_control(AM_HAL_CLKGEN_CONTROL_SYSCLK_MAX, nullptr);
 	am_hal_cachectrl_config(&am_hal_cachectrl_defaults);
 	am_hal_cachectrl_enable();
 	am_bsp_low_power_init();
