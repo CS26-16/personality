@@ -17,9 +17,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(
 		-mcpu=cortex-m4 -mthumb
 		-ffunction-sections -fdata-sections
-		$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions -fno-rtti>
 		-Wall -Wextra
+		$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions;-fno-rtti;-fno-threadsafe-statics
 )
+
 
 # ---- AmbiqSuite SDK root ----
 set(AMBIQSUITE_DIR ${CMAKE_SOURCE_DIR}/third-party/AmbiqSuiteSDK)
@@ -40,7 +41,7 @@ set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/toolchain/apollo3_evb_sbl.ld)
 
 message(STATUS "Using linker script: ${LINKER_SCRIPT}")
 
-# ---- Startup/system sources (names vary across SDKs; adjust if needed) ----
+# ---- Startup/system sources ----
 set(STARTUP_SOURCES
 		${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Source/system_apollo3.c
 		${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Source/startup_apollo3.s
@@ -75,3 +76,26 @@ add_custom_command(TARGET personality.elf POST_BUILD
 		COMMAND ${OBJCOPY} -O binary personality.elf personality.bin
 		COMMENT "Generating personality.bin"
 )
+
+# Host target (runs on macOS/Linux/Windows)
+set(HOST_SOURCES
+		apps/personality/src/main_host.cpp
+		platform/platform.hpp
+)
+
+if(WIN32)
+	list(APPEND HOST_SOURCES platform/host/impl_platform_win.cpp)
+else()
+	list(APPEND HOST_SOURCES platform/host/impl_platform_posix.cpp)
+endif()
+
+add_executable(personality_host ${HOST_SOURCES})
+target_compile_features(personality_host PRIVATE cxx_std_17)
+target_compile_options(personality_host PRIVATE -Wall -Wextra)
+
+if(MSVC)
+	# Optional: silence CRT warnings, favor speed, etc.
+	target_compile_definitions(personality_host PRIVATE _CRT_SECURE_NO_WARNINGS)
+else()
+	# clang/gcc flags already added above
+endif()
