@@ -3,23 +3,45 @@ extern "C" {
 #include "am_bsp.h"
 #include "am_util.h"
 }
-#include "platform/platform.hpp"
-#include <memory>
 
-struct AmbiqPlatform final : Platform {
-	void delay_ms(uint32_t ms) override { am_util_delay_ms(ms); }
-	void led_toggle() override { am_hal_gpio_output_toggle(AM_BSP_GPIO_LED0); }
-	void log(const std::string& s) override { am_util_stdio_printf("%s\n", s.c_str()); }
-	bool i2c_read(uint8_t, uint8_t, uint8_t*, size_t) override { /* TODO: am_hal_iom_* */ return false; }
-	bool i2c_write(uint8_t, uint8_t, const uint8_t*, size_t) override { /* TODO: am_hal_iom_* */ return false; }
+#include "app_core.hpp"
+
+struct AmbiqPlatform {
+	static void init_low_power() {
+		am_hal_clkgen_control(AM_HAL_CLKGEN_CONTROL_SYSCLK_MAX, nullptr);
+		am_hal_cachectrl_config(&am_hal_cachectrl_defaults);
+		am_hal_cachectrl_enable();
+		am_bsp_low_power_init();
+		am_hal_gpio_pinconfig(AM_BSP_GPIO_LED0, g_AM_HAL_GPIO_OUTPUT);
+		am_util_stdio_printf("Apollo3 init_low_power\n");
+	}
+
+	static void log(const std::string& s) { am_util_stdio_printf("%s\n", s.c_str()); }
+
+	static bool sensor_ready() {
+		// TODO: check an interrupt flag or timer
+		return true;
+	}
+
+	static Sample read_sample() {
+		Sample s{};
+		// TODO: real IOM I2C read into s.data
+		s.data[0] = 0x55;
+		return s;
+	}
+
+	static void process(const Sample& s) {
+		am_util_stdio_printf("Processing sample, first byte=%d\n", s.data[0]);
+		am_hal_gpio_output_toggle(AM_BSP_GPIO_LED0);
+	}
+
+	static void sleep_until_event() {
+		// Deep sleep until RTC/CTIMER/IOM wakes
+		am_hal_sysctrl_sleep(AM_HAL_SYSCTRL_SLEEP_DEEP);
+	}
 };
 
-std::unique_ptr<Platform> make_platform() {
-	// do any board init here if needed
-	am_hal_clkgen_control(AM_HAL_CLKGEN_CONTROL_SYSCLK_MAX, 0);
-	am_hal_cachectrl_config(&am_hal_cachectrl_defaults);
-	am_hal_cachectrl_enable();
-	am_bsp_low_power_init();
-	am_hal_gpio_pinconfig(AM_BSP_GPIO_LED0, g_AM_HAL_GPIO_OUTPUT);
-	return std::make_unique<AmbiqPlatform>();
+int main() {
+	AmbiqPlatform plat;
+	return run_app(plat);
 }
