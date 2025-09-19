@@ -23,7 +23,7 @@ message(STATUS "AmbiqSuiteSDK root: ${AMBIQSUITE_DIR}")
 # Host target (native build)
 # ===========================
 set(HOST_SOURCES
-		apps/personality/src/main_host.cpp
+		apps/personality/src/main.cpp
 )
 
 if(WIN32)
@@ -37,6 +37,7 @@ add_executable(personality_host ${HOST_SOURCES})
 # Add include path so #include "platform.hpp" works
 target_include_directories(personality_host PRIVATE
 		${CMAKE_SOURCE_DIR}/platform
+		${CMAKE_SOURCE_DIR}/apps/personality/src
 )
 
 target_compile_features(personality_host PRIVATE cxx_std_17)
@@ -80,8 +81,14 @@ if(NOT HOST_ONLY)
 	
 	add_executable(personality.elf
 			apps/personality/src/main.cpp
+			platform/ambiq/impl_platform.cpp
 			${SYSTEM_APOLLO3}
 			${STARTUP_APOLLO3}
+	)
+	
+	target_include_directories(personality.elf PRIVATE
+			${CMAKE_SOURCE_DIR}/platform
+			${CMAKE_SOURCE_DIR}/apps/personality/src
 	)
 	
 	# Cortex-M flags ONLY for the embedded target

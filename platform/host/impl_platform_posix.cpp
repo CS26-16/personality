@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <random>
 #include <algorithm>
+#include <memory>
 
 namespace {
 	struct FakeSensor {
@@ -22,7 +23,7 @@ namespace {
 	} fake68;
 }
 
-struct HostPlatformPosix final : Platform {
+struct HostPlatform final : Platform {
 	void delay_ms(uint32_t ms) override { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
 	void led_toggle() override { static bool on{}; on=!on; std::cout << "[LED] " << (on?"ON":"OFF") << "\n"; }
 	void log(const std::string& s) override { std::cout << s << "\n"; }
@@ -36,6 +37,6 @@ struct HostPlatformPosix final : Platform {
 	}
 };
 
-std::unique_ptr<Platform> make_host_platform() {
-	return std::make_unique<HostPlatformPosix>();
+std::unique_ptr<Platform> make_platform() {
+	return std::make_unique<HostPlatform>();
 }
