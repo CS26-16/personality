@@ -28,5 +28,5 @@ struct HostPlatform {
 
 int main() {
 	HostPlatform plat;
-	return run_app(plat);
+	run_app(plat);
 }
