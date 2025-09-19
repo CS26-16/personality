@@ -22,33 +22,37 @@ message(STATUS "AmbiqSuiteSDK root: ${AMBIQSUITE_DIR}")
 # ===========================
 # Host target (native build)
 # ===========================
-set(HOST_SOURCES
+if (HOST_ONLY)
+	set(HOST_SOURCES
 		platform/host/impl_platform_posix.cpp
 		apps/personality/src/app_core.hpp
-)
+	)
 
-if(WIN32)
-	list(APPEND HOST_SOURCES platform/host/impl_platform_win.cpp)
-else()
-	list(APPEND HOST_SOURCES platform/host/impl_platform_posix.cpp)
-endif()
+	if(WIN32)
+		list(APPEND HOST_SOURCES platform/host/impl_platform_win.cpp)
+	else()
+		list(APPEND HOST_SOURCES platform/host/impl_platform_posix.cpp)
+	endif()
 
-add_executable(personality_host ${HOST_SOURCES})
+	# host + embedded both
+	add_executable(personality_host ${HOST_SOURCES})
+	add_executable(personality.elf)
 
-# Add include path so #include "platform.hpp" works
-target_include_directories(personality_host PRIVATE
+	# Add include path so #include "platform.hpp" works
+	target_include_directories(personality_host PRIVATE
 		${CMAKE_SOURCE_DIR}/platform
 		${CMAKE_SOURCE_DIR}/apps/personality/src
-)
+	)
 
-target_compile_features(personality_host PRIVATE cxx_std_17)
-target_compile_options(personality_host PRIVATE -Wall -Wextra)
+	target_compile_features(personality_host PRIVATE cxx_std_17)
+	target_compile_options(personality_host PRIVATE -Wall -Wextra)
 
-if(MSVC)
-	target_compile_definitions(personality_host PRIVATE _CRT_SECURE_NO_WARNINGS)
-elseif(APPLE)
-	target_link_libraries(personality_host PRIVATE c++)
-endif()
+	if(MSVC)
+		target_compile_definitions(personality_host PRIVATE _CRT_SECURE_NO_WARNINGS)
+	elseif(APPLE)
+		target_link_libraries(personality_host PRIVATE c++)
+	endif()
+endif ()
 
 # ===============================
 # Embedded target (ARM toolchain)
