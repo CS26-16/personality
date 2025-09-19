@@ -8,7 +8,7 @@ struct Sample {
 
 // Template entrypoint, inlined for zero overhead on MCU
 template <class Platform>
-[[noreturn]] int run_app(Platform& plat) {
+[[noreturn]] void run_app(Platform& plat) {
 	plat.init_low_power();
 	plat.log("Personality app starting...");
 
