@@ -23,7 +23,8 @@ message(STATUS "AmbiqSuiteSDK root: ${AMBIQSUITE_DIR}")
 # Host target (native build)
 # ===========================
 set(HOST_SOURCES
-		apps/personality/src/main.cpp
+		platform/host/impl_platform_posix.cpp
+		apps/personality/src/app_core.hpp
 )
 
 if(WIN32)
@@ -80,8 +81,8 @@ if(NOT HOST_ONLY)
 	set(STARTUP_APOLLO3 ${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Source/startup_apollo3.s)
 	
 	add_executable(personality.elf
-			apps/personality/src/main.cpp
 			platform/ambiq/impl_platform.cpp
+			apps/personality/src/app_core.hpp
 			${SYSTEM_APOLLO3}
 			${STARTUP_APOLLO3}
 	)
