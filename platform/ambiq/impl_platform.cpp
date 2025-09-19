@@ -5,6 +5,9 @@ extern "C" {
 }
 
 #include "app_core.hpp"
+#include <string>
+#include <cstdint>
+using namespace std;
 
 struct AmbiqPlatform {
 	static void init_low_power() {
@@ -16,7 +19,7 @@ struct AmbiqPlatform {
 		am_util_stdio_printf("Apollo3 init_low_power\n");
 	}
 
-	static void log(const std::string& s) { am_util_stdio_printf("%s\n", s.c_str()); }
+	static void log(const string& s) { am_util_stdio_printf("%s\n", s.c_str()); }
 
 	static bool sensor_ready() {
 		// TODO: check an interrupt flag or timer
@@ -43,5 +46,5 @@ struct AmbiqPlatform {
 
 int main() {
 	AmbiqPlatform plat;
-	return run_app(plat);
+	run_app(plat);
 }
