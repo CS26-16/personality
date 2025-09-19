@@ -24,7 +24,6 @@ message(STATUS "AmbiqSuiteSDK root: ${AMBIQSUITE_DIR}")
 # ===========================
 set(HOST_SOURCES
 		apps/personality/src/main_host.cpp
-		platform/platform.hpp
 )
 
 if(WIN32)
@@ -34,8 +33,15 @@ else()
 endif()
 
 add_executable(personality_host ${HOST_SOURCES})
+
+# Add include path so #include "platform.hpp" works
+target_include_directories(personality_host PRIVATE
+		${CMAKE_SOURCE_DIR}/platform
+)
+
 target_compile_features(personality_host PRIVATE cxx_std_17)
 target_compile_options(personality_host PRIVATE -Wall -Wextra)
+
 if(MSVC)
 	target_compile_definitions(personality_host PRIVATE _CRT_SECURE_NO_WARNINGS)
 elseif(APPLE)
