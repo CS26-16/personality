@@ -57,8 +57,6 @@ if(NOT HOST_ONLY)
 	# --- Cross toolchain (scoped to embedded build only) ---
 	set(CMAKE_SYSTEM_NAME Generic)
 	set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-	set(CMAKE_C_COMPILER   arm-none-eabi-gcc)
-	set(CMAKE_CXX_COMPILER arm-none-eabi-g++)
 	set(CMAKE_ASM_COMPILER arm-none-eabi-gcc)
 	
 	# --- Includes ---
@@ -70,6 +68,7 @@ if(NOT HOST_ONLY)
 			${AMBIQSUITE_DIR}/mcu/apollo3/hal
 			${AMBIQSUITE_DIR}/utils
 			${AMBIQSUITE_DIR}/boards/apollo3_evb
+			${AMBIQSUITE_DIR}/boards/apollo3_evb/bsp
 	)
 	
 	# --- Linker script (your local one; swap to SDK .ld later if you prefer) ---
@@ -87,9 +86,44 @@ if(NOT HOST_ONLY)
 			${STARTUP_APOLLO3}
 	)
 	
+	# C++17 for IntelliSense
+	target_compile_features(personality.elf PRIVATE cxx_std_17)
+	
+	# Ambiq & project includes (already added)
 	target_include_directories(personality.elf PRIVATE
 			${CMAKE_SOURCE_DIR}/platform
 			${CMAKE_SOURCE_DIR}/apps/personality/src
+			${AMBIQSUITE_DIR}
+			${AMBIQSUITE_DIR}/CMSIS/ARM/Include
+			${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Include
+			${AMBIQSUITE_DIR}/mcu/apollo3
+			${AMBIQSUITE_DIR}/mcu/apollo3/hal
+			${AMBIQSUITE_DIR}/utils
+			${AMBIQSUITE_DIR}/boards/apollo3_evb
+	)
+	
+	# Indexer hint for ARM libstdc++ (uses the profile’s cache var)
+	if(DEFINED ARM_GCC_ROOT)
+		target_include_directories(personality.elf SYSTEM PRIVATE
+				${ARM_GCC_ROOT}/arm-none-eabi/include/c++/15.2.0
+				${ARM_GCC_ROOT}/arm-none-eabi/include/c++/15.2.0/arm-none-eabi
+		)
+	endif()
+	
+	# Tell CLion/clangd where the ARM C++ headers live (compiler already knows)
+	set(ARM_GCC_ROOT "/usr/local/Cellar/arm-none-eabi-gcc/15.2.0" CACHE PATH "ARM GCC root")
+	
+	# Ambiq + project include paths so CLion finds headers
+	target_include_directories(personality.elf PRIVATE
+			${CMAKE_SOURCE_DIR}/platform
+			${CMAKE_SOURCE_DIR}/apps/personality/src
+			${AMBIQSUITE_DIR}
+			${AMBIQSUITE_DIR}/CMSIS/ARM/Include
+			${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Include
+			${AMBIQSUITE_DIR}/mcu/apollo3
+			${AMBIQSUITE_DIR}/mcu/apollo3/hal
+			${AMBIQSUITE_DIR}/utils
+			${AMBIQSUITE_DIR}/boards/apollo3_evb
 	)
 	
 	# Cortex-M flags ONLY for the embedded target
