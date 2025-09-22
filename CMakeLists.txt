@@ -1,12 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
 project(personality LANGUAGES C CXX)
 
-# Build only the host target when ON (no cross/ARM config touched)
 option(HOST_ONLY "Build host targets only (no cross/ARM stuff)" OFF)
 
-# --------------------------------------------------------------------
-# Locate AmbiqSuiteSDK (support both third_party/ and third-party/)
-# --------------------------------------------------------------------
+# --- Locate AmbiqSuite (supports both spellings) ---
 set(AMBIQ_DIR_CANDIDATES
 		${CMAKE_SOURCE_DIR}/third_party/AmbiqSuiteSDK
 		${CMAKE_SOURCE_DIR}/third-party/AmbiqSuiteSDK
@@ -22,49 +19,38 @@ message(STATUS "AmbiqSuiteSDK root: ${AMBIQSUITE_DIR}")
 # ===========================
 # Host target (native build)
 # ===========================
-if (HOST_ONLY)
-	set(HOST_SOURCES
-		platform/host/impl_platform_posix.cpp
+set(HOST_SOURCES
 		apps/personality/src/app_core.hpp
-	)
+		apps/personality/src/main.cpp
+		platform/host/host_platform.hpp
+		platform/host/host_platform.cpp
+)
 
-	if(WIN32)
-		list(APPEND HOST_SOURCES platform/host/impl_platform_win.cpp)
-	else()
-		list(APPEND HOST_SOURCES platform/host/impl_platform_posix.cpp)
-	endif()
-
-	# host + embedded both
-	add_executable(personality_host ${HOST_SOURCES})
-	add_executable(personality.elf)
-
-	# Add include path so #include "platform.hpp" works
-	target_include_directories(personality_host PRIVATE
+add_executable(personality_host ${HOST_SOURCES})
+target_compile_definitions(personality_host PRIVATE PLATFORM_HOST=1)
+target_include_directories(personality_host PRIVATE
 		${CMAKE_SOURCE_DIR}/platform
 		${CMAKE_SOURCE_DIR}/apps/personality/src
-	)
+)
 
-	target_compile_features(personality_host PRIVATE cxx_std_17)
-	target_compile_options(personality_host PRIVATE -Wall -Wextra)
-
-	if(MSVC)
-		target_compile_definitions(personality_host PRIVATE _CRT_SECURE_NO_WARNINGS)
-	elseif(APPLE)
-		target_link_libraries(personality_host PRIVATE c++)
-	endif()
-endif ()
+target_compile_features(personality_host PRIVATE cxx_std_17)
+target_compile_options(personality_host PRIVATE -Wall -Wextra)
+if(MSVC)
+	target_compile_definitions(personality_host PRIVATE _CRT_SECURE_NO_WARNINGS)
+elseif(APPLE)
+	target_link_libraries(personality_host PRIVATE c++)
+endif()
 
 # ===============================
 # Embedded target (ARM toolchain)
 # ===============================
 if(NOT HOST_ONLY)
-	# --- Cross toolchain (scoped to embedded build only) ---
-	set(CMAKE_SYSTEM_NAME Generic)
-	set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-	set(CMAKE_ASM_COMPILER arm-none-eabi-gcc)
+	# Toolchain is provided via -DCMAKE_TOOLCHAIN_FILE=toolchain/arm-gcc.cmake
 	
-	# --- Includes ---
-	include_directories(
+	# Includes (embedded only)
+	set(EMBEDDED_INCLUDES
+			${CMAKE_SOURCE_DIR}/platform
+			${CMAKE_SOURCE_DIR}/apps/personality/src
 			${AMBIQSUITE_DIR}
 			${AMBIQSUITE_DIR}/CMSIS/ARM/Include
 			${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Include
@@ -72,16 +58,15 @@ if(NOT HOST_ONLY)
 			${AMBIQSUITE_DIR}/mcu/apollo3/hal
 			${AMBIQSUITE_DIR}/utils
 			${AMBIQSUITE_DIR}/boards/apollo3_evb
-			${AMBIQSUITE_DIR}/boards/apollo3_evb/bsp
 	)
 	
-	# --- Linker script (your local one; swap to SDK .ld later if you prefer) ---
-	set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/toolchain/apollo3_evb_sbl.ld)
-	message(STATUS "Using linker script: ${LINKER_SCRIPT}")
-	
-	# --- Startup + system sources (from CMSIS in your SDK) ---
+	# Startup/system sources (embedded only)
 	set(SYSTEM_APOLLO3  ${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Source/system_apollo3.c)
 	set(STARTUP_APOLLO3 ${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Source/startup_apollo3.s)
+	
+	# Linker script (adjust if you switch to SDK .ld)
+	set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/toolchain/apollo3_evb_sbl.ld)
+	message(STATUS "Using linker script: ${LINKER_SCRIPT}")
 	
 	add_executable(personality.elf
 			platform/ambiq/impl_platform.cpp
@@ -89,24 +74,26 @@ if(NOT HOST_ONLY)
 			${SYSTEM_APOLLO3}
 			${STARTUP_APOLLO3}
 	)
-	
-	# C++17 for IntelliSense
+	target_include_directories(personality.elf PRIVATE ${EMBEDDED_INCLUDES})
 	target_compile_features(personality.elf PRIVATE cxx_std_17)
-	
-	# Ambiq & project includes (already added)
-	target_include_directories(personality.elf PRIVATE
-			${CMAKE_SOURCE_DIR}/platform
-			${CMAKE_SOURCE_DIR}/apps/personality/src
-			${AMBIQSUITE_DIR}
-			${AMBIQSUITE_DIR}/CMSIS/ARM/Include
-			${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Include
-			${AMBIQSUITE_DIR}/mcu/apollo3
-			${AMBIQSUITE_DIR}/mcu/apollo3/hal
-			${AMBIQSUITE_DIR}/utils
-			${AMBIQSUITE_DIR}/boards/apollo3_evb
+	target_compile_options(personality.elf PRIVATE
+			-mcpu=cortex-m4 -mthumb
+			-ffunction-sections -fdata-sections
+			-Wall -Wextra
+			$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions;-fno-rtti;-fno-threadsafe-statics>
+	)
+	target_link_options(personality.elf PRIVATE
+			-T${LINKER_SCRIPT}
+			-Wl,--gc-sections
+			-Wl,-Map=${CMAKE_BINARY_DIR}/personality.map
+	)
+	target_link_libraries(personality.elf PRIVATE
+			${AMBIQSUITE_DIR}/mcu/apollo3/gcc/bin/libam_hal.a
+			${AMBIQSUITE_DIR}/boards/apollo3_evb/gcc/bin/libam_bsp.a
+			-Wl,--start-group m c gcc nosys -Wl,--end-group
 	)
 	
-	# Indexer hint for ARM libstdc++ (uses the profile’s cache var)
+	# Optional: help CLion index the ARM libstdc++
 	if(DEFINED ARM_GCC_ROOT)
 		target_include_directories(personality.elf SYSTEM PRIVATE
 				${ARM_GCC_ROOT}/arm-none-eabi/include/c++/15.2.0
@@ -114,44 +101,7 @@ if(NOT HOST_ONLY)
 		)
 	endif()
 	
-	# Tell CLion/clangd where the ARM C++ headers live (compiler already knows)
-	set(ARM_GCC_ROOT "/usr/local/Cellar/arm-none-eabi-gcc/15.2.0" CACHE PATH "ARM GCC root")
-	
-	# Ambiq + project include paths so CLion finds headers
-	target_include_directories(personality.elf PRIVATE
-			${CMAKE_SOURCE_DIR}/platform
-			${CMAKE_SOURCE_DIR}/apps/personality/src
-			${AMBIQSUITE_DIR}
-			${AMBIQSUITE_DIR}/CMSIS/ARM/Include
-			${AMBIQSUITE_DIR}/CMSIS/AmbiqMicro/Include
-			${AMBIQSUITE_DIR}/mcu/apollo3
-			${AMBIQSUITE_DIR}/mcu/apollo3/hal
-			${AMBIQSUITE_DIR}/utils
-			${AMBIQSUITE_DIR}/boards/apollo3_evb
-	)
-	
-	# Cortex-M flags ONLY for the embedded target
-	target_compile_options(personality.elf PRIVATE
-			-mcpu=cortex-m4 -mthumb
-			-ffunction-sections -fdata-sections
-			-Wall -Wextra
-			$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions;-fno-rtti;-fno-threadsafe-statics>
-	)
-	
-	target_link_options(personality.elf PRIVATE
-			-T${LINKER_SCRIPT}
-			-Wl,--gc-sections
-			-Wl,-Map=${CMAKE_BINARY_DIR}/personality.map
-	)
-	
-	# Link prebuilt HAL + BSP from the SDK
-	target_link_libraries(personality.elf PRIVATE
-			${AMBIQSUITE_DIR}/mcu/apollo3/gcc/bin/libam_hal.a
-			${AMBIQSUITE_DIR}/boards/apollo3_evb/gcc/bin/libam_bsp.a
-			-Wl,--start-group m c gcc nosys -Wl,--end-group
-	)
-	
-	# Create .bin next to the .elf
+	# .bin artifact
 	find_program(OBJCOPY arm-none-eabi-objcopy)
 	add_custom_command(TARGET personality.elf POST_BUILD
 			COMMAND ${OBJCOPY} -O binary personality.elf personality.bin
