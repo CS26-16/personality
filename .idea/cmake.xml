@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeSharedSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Host" ENABLED="true" CONFIG_NAME="Debug" TOOLCHAIN_NAME="Default" GENERATION_OPTIONS="-DHOST_ONLY=ON" />
+      <configuration PROFILE_NAME="Embedded-Debug" ENABLED="true" CONFIG_NAME="Debug" TOOLCHAIN_NAME="Default" GENERATION_OPTIONS="-DCMAKE_TOOLCHAIN_FILE=$ProjectFileDir$/toolchain/arm-gcc.cmake -DARM_GCC_ROOT=/usr/local/Cellar/arm-none-eabi-gcc/15.2.0" NO_GENERATOR="true" />
+      <configuration PROFILE_NAME="Embedded-Release" ENABLED="true" CONFIG_NAME="Release" TOOLCHAIN_NAME="Default" GENERATION_OPTIONS="-DCMAKE_TOOLCHAIN_FILE=$ProjectFileDir$/toolchain/arm-gcc.cmake -DARM_GCC_ROOT=/usr/local/Cellar/arm-none-eabi-gcc/15.2.0" NO_GENERATOR="true" />
+    </configurations>
+  </component>
+</project>
